@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Кредитный калькулятор</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: rgb(0, 0, 0);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fefefe;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .calculator-container {
+            background-color:rgb(249, 184, 160);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px;
+            padding: 30px;
+            margin-bottom: 2px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 100px;
+            margin-bottom: 20px;
+        }
+        
+        .input-field {
+            flex: 1;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: black;
+        }
+        
+        input, select {
+            width: 300px;
+            padding: 10px 15px;
+            border: 1px solid;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        input:focus, select:focus {
+            border-color: #ff7f50;
+        }
+        
+        button {
+            background-color: coral;
+            color: white;
+            border: double;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: block;
+            margin: 30px auto;
+            width: 200px;
+        }
+        
+        button:hover {
+            background-color: rgb(220, 92, 45);
+        }
+        
+        .results {
+            background-color: whitesmoke;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed;
+        }
+        
+        .result-label {
+            font-weight: 600;
+        }
+        
+        .result-value {
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Кредитный калькулятор</h1>
+        
+        <div class="input-group">
+            <div class="input-field">
+                <label for="loanAmount">Сумма кредита</label>
+                <input type="number" id="loanAmount" value="300000" min="0" step="10000">
+            </div>
+            
+            <div class="input-field">
+                <label for="currency">Валюта</label>
+                <select id="currency">
+                    <option value="₽">Рубли (₽)</option>
+                    <option value="$">Доллары ($)</option>
+                    <option value="€">Евро (€)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="input-field">
+                <label for="loanTerm">Срок кредита</label>
+                <input type="number" id="loanTerm" value="24" min="1">
+            </div>
+            
+            <div class="input-field">
+                <label for="termType">Период</label>
+                <select id="termType">
+                    <option value="months">Месяцы</option>
+                    <option value="years">Годы</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="input-field">
+                <label for="interestRate">Процентная ставка</label>
+                <input type="number" id="interestRate" value="12" min="0" step="0.1">
+            </div>
+            
+            <div class="input-field">
+                <label for="rateType">Период ставки</label>
+                <select id="rateType">
+                    <option value="annual">Годовая</option>
+                    <option value="monthly">Месячная</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="calculateLoan()">Рассчитать</button>
+        
+        <div class="results">
+            <h2>Результаты расчета</h2>
+          
+            <div class="result-item">
+                <span class="result-label">Ежемесячный платеж:</span>
+                <span class="result-value" id="monthlyPayment">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Общая сумма выплат:</span>
+                <span class="result-value" id="totalPayment">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Начисленные проценты:</span>
+                <span class="result-value" id="totalInterest">-</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Переплата:</span>
+                <span class="result-value" id="overpaymentPercent">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateLoan() {
+            // Получаем значения из формы
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+            const currency = document.getElementById('currency').value;
+            let loanTerm = parseInt(document.getElementById('loanTerm').value);
+            const termType = document.getElementById('termType').value;
+            let interestRate = parseFloat(document.getElementById('interestRate').value);
+            const rateType = document.getElementById('rateType').value;
+            
+            // Конвертируем срок в месяцы, если указаны годы
+            if (termType === 'years') {
+                loanTerm *= 12;
+            }
+            
+            // Конвертируем процентную ставку в месячную, если указана годовая
+            let monthlyRate;
+            if (rateType === 'annual') {
+                monthlyRate = interestRate / 100 / 12;
+            } else {
+                monthlyRate = interestRate / 100;
+            }
+            
+            // Рассчитываем аннуитетный платеж
+            const monthlyPayment = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, loanTerm) / (Math.pow(1 + monthlyRate, loanTerm) - 1);
+            const totalPayment = monthlyPayment * loanTerm;
+            const totalInterest = totalPayment - loanAmount;
+            const overpaymentPercent = (totalInterest / loanAmount * 100).toFixed(2);
+            
+            // Форматируем числа с разделителями тысяч
+            const formatNumber = (num) => {
+                return num.toFixed(2);
+            };
+            
+            // Отображаем результаты
+            document.getElementById('monthlyPayment').textContent = formatNumber(monthlyPayment) + ' ' + currency;
+            document.getElementById('totalPayment').textContent = formatNumber(totalPayment) + ' ' + currency;
+            document.getElementById('totalInterest').textContent = formatNumber(totalInterest) + ' ' + currency;
+            document.getElementById('overpaymentPercent').textContent = overpaymentPercent + '%';
+        }
+        
+        // Вызываем расчет при загрузке страницы
+        window.onload = calculateLoan;
+    </script>
+</body>
+</html>

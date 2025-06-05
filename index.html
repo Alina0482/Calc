@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Расширенный калькулятор</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="manifest" href="manifest.json">
+        <link rel="stylesheet" href="style.css">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                background-color: #f5f5f5;
+            }
+            
+            .container {
+                width: 600px;
+                background-color: #a8d5df;
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                grid-gap: 10px;
+            }
+            
+            .screen {
+                grid-column: span 4;
+                background-color: #d1ebef;
+                color: rgb(31, 31, 31);
+                font-size: 35px;
+                padding: 20px;
+                text-align: right;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                height: 30px;
+                overflow: hidden;
+            }
+            
+            .button {
+                padding: 15px;
+                font-size: 1.2em;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                background-color: #8ec6d2;
+                color: rgb(31, 31, 31);
+                transition: background-color 0.2s;
+                text-align: center;
+            }
+            
+            .button:hover {
+                background-color: #86b9c5;
+            }
+            
+            .button:active {
+                background-color: #86bac59f;
+            }
+            
+            .deist {
+                background-color: #77b2c0;
+            }
+            
+            .deist:hover {
+                background-color: #6ca4b2;
+            }
+            
+            .deist:active {
+                background-color: #6ca4b2cd;
+            }
+            
+            .beq {
+                background-color: #69aaba;
+            }
+            
+            .func {
+                background-color: #77b2c0;
+                color: black;
+            }
+            
+            .advanced-btn {
+                grid-column: span 4;
+                background-color: #69aaba;
+                margin-top: 10px;
+            }
+            
+            .advanced-panel {
+                display: none;
+                grid-column: span 4;
+                grid-template-columns: repeat(4, 1fr);
+                grid-gap: 10px;
+                margin-top: 10px;
+            }
+            
+            .advanced-panel.active {
+                display: grid;
+            }
+        </style>
+        <script>
+            if (typeof navigator.serviceWorker !== 'undefined') {
+                navigator.serviceWorker.register('serviceworker.js')
+            }
+        </script>   
+    </head>
+    <body>
+        <button id="install" class="button" hidden>Установить на телефон</button>
+        <div class="container">
+            <div class="screen">0</div>
+            
+            <div class="button func" onclick="inputFunction('%')">%</div>
+            <div class="button func" onclick="inputClear('CE')">CE</div>
+            <div class="button func" onclick="inputClear('C')">C</div>
+            <div class="button func" onclick="backspace()">&lt;=</div>
+            
+            <div class="button func" onclick="inputFunction('1/x')">1/x</div>
+            <div class="button func" onclick="inputFunction('x²')">x²</div>
+            <div class="button func" onclick="inputFunction('√x')">√x</div>
+            <div class="button deist" onclick="inputOperator('/')">/</div>
+            
+            <div class="button bnum" onclick="inputNumber('7')">7</div>
+            <div class="button bnum" onclick="inputNumber('8')">8</div>
+            <div class="button bnum" onclick="inputNumber('9')">9</div>
+            <div class="button deist" onclick="inputOperator('*')">*</div>
+            
+            <div class="button bnum" onclick="inputNumber('4')">4</div>
+            <div class="button bnum" onclick="inputNumber('5')">5</div>
+            <div class="button bnum" onclick="inputNumber('6')">6</div>
+            <div class="button deist" onclick="inputOperator('-')">-</div>
+            
+            <div class="button bnum" onclick="inputNumber('1')">1</div>
+            <div class="button bnum" onclick="inputNumber('2')">2</div>
+            <div class="button bnum" onclick="inputNumber('3')">3</div>
+            <div class="button deist" onclick="inputOperator('+')">+</div>
+            
+            <div class="button func" onclick="inputFunction('+/-')">+/-</div>
+            <div class="button bnum" onclick="inputNumber('0')">0</div>
+            <div class="button bnum" onclick="inputNumber(',')">,</div>
+            <div class="button deist beq" onclick="inputOperator('=')">=</div>
+            
+            <div class="button advanced-btn" onclick="toggleAdvanced()">Дополнительные функции</div>
+            
+            <div class="advanced-panel" id="advancedPanel">
+                <div class="button func" onclick="inputFunction('x³')">x³</div>
+                <div class="button func" onclick="inputFunction('x!')">x!</div>
+                <div class="button func" onclick="inputFunction('x^y')">x^y</div>
+                <div class="button func" onclick="inputFunction('MR')">MR</div>
+                <div class="button func" onclick="inputFunction('MS')">MS</div>
+            </div>
+        </div>
+
+        <script>
+            let currentInput = '0';
+            let previousInput = '';
+            let operation = null;
+            let resetInput = false;
+            let memoryValue = 0;
+            const display = document.querySelector(".screen");
+
+            function inputNumber(number) {
+                if (number === ',') {
+                    if (currentInput.includes(',')) return;
+                    if (currentInput === '0' || resetInput) {
+                        currentInput = '0,';
+                        resetInput = false;
+                    } else {
+                        currentInput += ',';
+                    }
+                } else {
+                    if (currentInput === '0' || resetInput) {
+                        currentInput = number;
+                        resetInput = false;
+                    } else {
+                        currentInput += number;
+                    }
+                }
+                updateDisplay();
+            }
+
+            function inputClear(clearType) {
+                if (clearType === 'C') {
+                    currentInput = '0';
+                    previousInput = '';
+                    operation = null;
+                } else if (clearType === 'CE') {
+                    currentInput = '0';
+                }
+                updateDisplay();
+            }
+
+            function inputOperator(op) {
+                if (op === '=') {
+                    calculate();
+                    return;
+                }
+                if (operation !== null) calculate();
+                previousInput = currentInput;
+                operation = op;
+                resetInput = true;
+            }
+
+            function calculate() {
+                if (operation === null) return;
+                
+                const prev = parseFloat(previousInput.replace(',', '.'));
+                const current = parseFloat(currentInput.replace(',', '.'));
+                let result;
+                
+                switch(operation) {
+                    case '+': result = prev + current; break;
+                    case '-': result = prev - current; break;
+                    case '*': result = prev * current; break;
+                    case '/':
+                        if (current === 0) {
+                            currentInput = 'Ошибка';
+                            operation = null;
+                            updateDisplay();
+                            return;
+                        }
+                        result = prev / current;
+                        break;
+                    case '^':
+                        result = Math.pow(prev, current);
+                        break;
+                }
+                currentInput = result.toString().replace('.', ',');
+                operation = null;
+                resetInput = true;
+                updateDisplay();
+            }
+            
+            function inputFunction(func) {
+                if (currentInput === 'Ошибка') return;
+                
+                switch(func) {
+                    case 'MR':
+                        currentInput = memoryValue.toString().replace('.', ',');
+                        break;
+                    case 'MS':
+                        memoryValue = parseFloat(currentInput.replace(',', '.'));
+                        break;
+                    default:
+                        let num = parseFloat(currentInput.replace(',', '.'));
+                        
+                        switch(func) {
+                            case '%':
+                                currentInput = (num / 100).toString().replace('.', ',');
+                                break;
+                            case '1/x':
+                                if (num === 0) {
+                                    currentInput = 'Ошибка';
+                                    updateDisplay();
+                                    return;
+                                }
+                                currentInput = (1 / num).toString().replace('.', ',');
+                                break;
+                            case 'x²':
+                                currentInput = (num * num).toString().replace('.', ',');
+                                break;
+                            case '√x':
+                                if (num < 0) {
+                                    currentInput = 'Ошибка';
+                                    updateDisplay();
+                                    return;
+                                }
+                                currentInput = Math.sqrt(num).toString().replace('.', ',');
+                                break;
+                            case '+/-':
+                                currentInput = (-num).toString().replace('.', ',');
+                                break;
+                            case 'x³':
+                                currentInput = (num * num * num).toString().replace('.', ',');
+                                break;
+                            case 'x!':
+                                if (num < 0 || !Number.isInteger(num)) {
+                                    currentInput = 'Ошибка';
+                                    updateDisplay();
+                                    return;
+                                }
+                                let fact = 1;
+                                for (let i = 2; i <= num; i++) {
+                                    fact *= i;
+                                }
+                                currentInput = fact.toString().replace('.', ',');
+                                break;
+                            case 'x^y':
+                                previousInput = currentInput;
+                                operation = '^';
+                                resetInput = true;
+                                break;
+                        }
+                }
+                updateDisplay();
+            }
+
+            function backspace() {
+                if (currentInput === 'Ошибка') {
+                    currentInput = '0';
+                } else if (currentInput.length === 1 || (currentInput.length === 2 && currentInput.startsWith('-'))) {
+                    currentInput = '0';
+                } else {
+                    currentInput = currentInput.slice(0, -1);
+                }
+                updateDisplay();
+            }
+
+            function updateDisplay() {
+                display.innerHTML = currentInput;
+            }
+            
+            function toggleAdvanced() {
+                const panel = document.getElementById('advancedPanel');
+                panel.classList.toggle('active');
+            }
+        </script>
+
+        <script>
+            // PWA installation handling
+            let installPrompt = null;
+            const installButton = document.querySelector("#install");
+
+            window.addEventListener("beforeinstallprompt", function(event) {
+                event.preventDefault();
+                installPrompt = event;
+                installButton.removeAttribute("hidden");
+            });
+
+            installButton.addEventListener("click", async function() {
+                if (!installPrompt) return;
+                const result = await installPrompt.prompt();
+                alert(`Результат установки: ${result.outcome}`);
+                disableInAppInstallPrompt();
+            });
+
+            function disableInAppInstallPrompt() {
+                installPrompt = null;
+                installButton.setAttribute("hidden", "");
+            }
+            
+            window.addEventListener("appinstalled", function() {
+                disableInAppInstallPrompt();
+            });
+        </script>
+    </body>
+</html>
